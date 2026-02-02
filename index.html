@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Will you be my Valentine?</title>
+
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <!-- Confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg1: #ffd6e7;
+            --bg2: #ffeef6;
+            --card: #ffffffcc;
+            --primary: #ff3b7a;
+            --primary-hover: #ff1f68;
+            --text-main: #333;
+            --text-light: #666;
+            --shadow: 0 18px 60px rgba(0, 0, 0, .15);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100svh;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle at top, var(--bg2), var(--bg1));
+            font-family: 'Outfit', system-ui, sans-serif;
+            overflow: hidden;
+            padding: 16px;
+            color: var(--text-main);
+        }
+
+        /* UTILS */
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* FULL-SCREEN CONFETTI CANVAS */
+        #confettiCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* CARDS */
+        .card {
+            width: min(720px, 92vw);
+            padding: 32px 24px;
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 32px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* CREATOR FORM STYLES */
+        .creator-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 2px solid rgba(200, 200, 200, 0.3);
+            background: rgba(255, 255, 255, 0.8);
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .generate-btn {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 16px;
+            border-radius: 99px;
+            border: none;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .generate-btn:active {
+            transform: scale(0.98);
+        }
+
+        .generated-output {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            border: 1px dashed var(--primary);
+        }
+
+        .share-link {
+            word-break: break-all;
+            font-size: 14px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            user-select: all;
+            display: none;
+            /* Hidden by default, mostly for copy fallback */
+        }
+
+        /* ADS STYLES */
+        .ad-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            color: #888;
+            font-size: 12px;
+            display: grid;
+            place-items: center;
+            min-height: 100px;
+        }
+
+        /* PARTNER VIEW STYLES */
+        .art {
+            width: min(260px, 80vw);
+            margin: 0 auto 10px;
+            display: block;
+            filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .12));
+        }
+
+        h1 {
+            font-size: clamp(26px, 4vw, 44px);
+            margin: 12px 0 18px;
+            line-height: 1.2;
+        }
+
+        .button-zone {
+            position: relative;
+            width: min(520px, 92%);
+            height: 150px;
+            margin: 0 auto;
+            touch-action: none;
+        }
+
+        .action-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 16px 32px;
+            font-size: 20px;
+            font-weight: 800;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .14);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .12s ease, background .12s ease;
+        }
+
+        #yesBtn {
+            left: 18%;
+            background: var(--primary);
+            color: #fff;
+        }
+
+        #yesBtn:hover {
+            background: var(--primary-hover);
+        }
+
+        #noBtn {
+            left: 62%;
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: .6;
+            font-weight: 500;
+        }
+
+        .result {
+            margin-top: 18px;
+            animation: pop .35s ease;
+        }
+
+        .result h2 {
+            font-size: clamp(30px, 4.5vw, 46px);
+            margin: 10px 0;
+            color: var(--primary);
+        }
+
+        .result p {
+            font-size: 18px;
+            opacity: 0.8;
+            max-width: 400px;
+            margin: 0 auto 20px;
+        }
+
+        .share-response-btn {
+            display: inline-block;
+            text-decoration: none;
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(255, 59, 122, 0.3);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .share-response-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .fireworks {
+            width: min(380px, 90vw);
+            margin: 0 auto;
+            display: block;
+            border-radius: 12px;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.96);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- CREATOR VIEW -->
+    <main class="card fade-in" id="creatorView">
+        <div class="creator-title">💌 Create Your Valentine</div>
+
+        <div class="form-group">
+            <label class="form-label">Partner's Name</label>
+            <input type="text" id="pName" class="form-input" placeholder="e.g. Nirali" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Custom Message (optional)</label>
+            <input type="text" id="cMsg" class="form-input" placeholder="Default: Will you be my Valentine?"
+                autocomplete="off">
+        </div>
+
+        <button class="generate-btn" onclick="generateLink()">
+            Generate Link 🔗
+        </button>
+
+        <div id="output" class="generated-output hidden">
+            <button class="generate-btn" id="shareBtn" onclick="shareLink()">
+                Share to <span id="btnPartnerName">Partner</span> 📤
+            </button>
+            <div id="fallbackArea" class="hidden" style="margin-top: 10px;">
+                <div style="font-size: 12px; margin-bottom: 5px;">Or copy link:</div>
+                <div id="shareLink" class="share-link" style="display:block; font-size: 12px;"></div>
+                <button onclick="copyLink()"
+                    style="padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; background: white; cursor: pointer;">Copy</button>
+            </div>
+        </div>
+
+        <!-- GOOGLE ADS PLACEHOLDER (Creator Only) -->
+        <div class="ad-container">
+            <!-- Google Ad Placeholder -->
+            <p><strong>Advertisement</strong></p>
+            <p>(Google Ads or Reward Video Placeholder)</p>
+            <!-- 
+                Paste Google Ads Script Here 
+                Example:
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                <ins class="adsbygoogle" ...></ins>
+            -->
+        </div>
+    </main>
+
+    <!-- PARTNER VIEW -->
+    <main class="card hidden" id="partnerView">
+        <!-- ANIMAL WITH HEART -->
+        <svg class="art" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="fur" x1="0" x2="1">
+                    <stop offset="0" stop-color="#f7c7a1" />
+                    <stop offset="1" stop-color="#f2a97b" />
+                </linearGradient>
+                <linearGradient id="heart" x1="0" x2="1">
+                    <stop offset="0" stop-color="#ff4d7d" />
+                    <stop offset="1" stop-color="#ff1f68" />
+                </linearGradient>
+            </defs>
+            <path d="M250 50 C250 33 270 25 282 38 C294 25 314 33 314 50 C314 78 282 92 282 106 C282 92 250 78 250 50Z"
+                fill="url(#heart)" />
+            <path
+                d="M90 120 C90 70 140 40 190 60 C240 40 290 70 290 120 C290 180 240 210 190 210 C140 210 90 180 90 120Z"
+                fill="url(#fur)" />
+            <path d="M110 92 L95 55 L140 78 Z" fill="#f2a97b" />
+            <path d="M270 92 L285 55 L240 78 Z" fill="#f2a97b" />
+            <circle cx="160" cy="130" r="8" />
+            <circle cx="220" cy="130" r="8" />
+            <path
+                d="M190 144 C186 144 182 148 182 152 C182 160 190 164 190 170 C190 164 198 160 198 152 C198 148 194 144 190 144Z"
+                fill="#ff7aa2" />
+        </svg>
+
+        <h1 id="questionTitle">Will you be my Valentine?</h1>
+
+        <section class="button-zone" id="zone">
+            <button class="action-btn" id="yesBtn">Yes</button>
+            <button class="action-btn" id="noBtn">No</button>
+        </section>
+
+        <!-- HINT -->
+        <div class="hint" id="hint">“No” seems a bit shy 😈</div>
+
+        <section class="result hidden" id="result">
+            <h2>YAY! 🎉</h2>
+            <p id="resultMsg">Best decision ever!</p>
+
+            <button class="share-response-btn" onclick="shareResponse()">
+                Share the good news 💌
+            </button>
+
+            <br /><br />
+            <img class="fireworks" src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" alt="Fireworks" />
+        </section>
+    </main>
+
+    <!-- ACCEPTANCE VIEW (For Creator seeing the Yes) -->
+    <main class="card hidden" id="acceptanceView">
+        <h1 style="font-size: 50px;">💖</h1>
+        <h1 id="acceptanceTitle">They said YES!</h1>
+        <p>Your Valentine has accepted your proposal!</p>
+        <img class="fireworks" src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" alt="Fireworks" />
+    </main>
+
+    <script>
+        /* ---------------- STATE & PARAMS ---------------- */
+        const urlParams = new URLSearchParams(window.location.search);
+        const partnerName = urlParams.get('partner');
+        const customMsg = urlParams.get('msg');
+        const responseMode = urlParams.get('response');
+
+        const creatorView = document.getElementById("creatorView");
+        const partnerView = document.getElementById("partnerView");
+        const acceptanceView = document.getElementById("acceptanceView");
+
+        let generatedUrl = ""; // Store for sharing
+
+        /* ---------------- INIT VIEW ---------------- */
+        if (responseMode === 'yes') {
+            // ACCEPTANCE VIEW (Creator seeing response)
+            creatorView.classList.add("hidden");
+            acceptanceView.classList.remove("hidden");
+            acceptanceView.classList.add("fade-in");
+            if (partnerName) {
+                document.getElementById("acceptanceTitle").textContent = `${partnerName} said YES!`;
+                document.title = `${partnerName} said YES!`;
+            }
+            startParty();
+        }
+        else if (partnerName) {
+            // PARTNER MODE
+            creatorView.classList.add("hidden");
+            partnerView.classList.remove("hidden");
+            partnerView.classList.add("fade-in");
+
+            const titleEl = document.getElementById("questionTitle");
+            const finalMsg = customMsg ? decodeURIComponent(customMsg) : "Will you be my Valentine?";
+
+            titleEl.textContent = `${partnerName}, ${finalMsg.toLowerCase()}`;
+            document.title = `${partnerName}, be mine?`;
+        }
+        else {
+            // CREATOR MODE (Default)
+        }
+
+        /* ---------------- CREATOR LOGIC ---------------- */
+        function generateLink() {
+            const name = document.getElementById("pName").value.trim();
+            const msg = document.getElementById("cMsg").value.trim();
+
+            if (!name) {
+                alert("Please enter your partner's name!");
+                return;
+            }
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams();
+            params.set('partner', name);
+            if (msg) params.set('msg', msg);
+
+            generatedUrl = `${baseUrl}?${params.toString()}`;
+
+            // Update UI
+            document.getElementById("btnPartnerName").textContent = name;
+            document.getElementById("shareLink").textContent = generatedUrl;
+            document.getElementById("output").classList.remove("hidden");
+        }
+
+        async function shareLink() {
+            const name = document.getElementById("pName").value.trim();
+            const shareData = {
+                title: `For ${name} 💖`,
+                text: `${name}, I have a question for you...`,
+                url: generatedUrl
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.error("Share failed", err);
+                    showFallback();
+                }
+            } else {
+                showFallback();
+            }
+        }
+
+        function showFallback() {
+            document.getElementById("fallbackArea").classList.remove("hidden");
+        }
+
+        function copyLink() {
+            const text = document.getElementById("shareLink").textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Link copied to clipboard!");
+            });
+        }
+
+        /* ---------------- PARTNER LOGIC ---------------- */
+        const zone = document.getElementById("zone");
+        const yesBtn = document.getElementById("yesBtn");
+        const noBtn = document.getElementById("noBtn");
+        const result = document.getElementById("result");
+        const hint = document.getElementById("hint");
+        const confettiCanvas = document.getElementById("confettiCanvas");
+
+        /* CONFETTI SETUP */
+        function resizeConfettiCanvas() {
+            const dpr = Math.max(1, window.devicePixelRatio || 1);
+            confettiCanvas.width = Math.floor(window.innerWidth * dpr);
+            confettiCanvas.height = Math.floor(window.innerHeight * dpr);
+            confettiCanvas.style.width = "100vw";
+            confettiCanvas.style.height = "100vh";
+        }
+        window.addEventListener("resize", resizeConfettiCanvas);
+        resizeConfettiCanvas();
+
+        const confettiInstance = confetti.create(confettiCanvas, { resize: false, useWorker: true });
+
+        function startParty() {
+            const end = Date.now() + 2000;
+            (function frame() {
+                confettiInstance({
+                    particleCount: 10,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 }
+                });
+                confettiInstance({
+                    particleCount: 10,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 }
+                });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            })();
+        }
+
+        /* INTERACTIONS */
+        let yesScale = 1;
+        function growYes() {
+            yesScale = Math.min(2.5, yesScale + 0.1);
+            yesBtn.style.transform = `translateY(-50%) scale(${yesScale})`;
+        }
+
+        function moveNo(px, py) {
+            const z = zone.getBoundingClientRect();
+            const b = noBtn.getBoundingClientRect();
+
+            let dx = (b.left + b.width / 2) - px;
+            let dy = (b.top + b.height / 2) - py;
+            let mag = Math.hypot(dx, dy) || 1;
+            dx /= mag;
+            dy /= mag;
+
+            let newLeft = (b.left - z.left) + dx * 150;
+            let newTop = (b.top - z.top) + dy * 150;
+
+            newLeft = Math.max(0, Math.min(newLeft, z.width - b.width));
+            newTop = Math.max(0, Math.min(newTop, z.height - b.height));
+
+            noBtn.style.left = newLeft + "px";
+            noBtn.style.top = newTop + "px";
+            noBtn.style.transform = "none";
+
+            growYes();
+        }
+
+        zone.addEventListener("mousemove", (e) => {
+            const b = noBtn.getBoundingClientRect();
+            const dist = Math.hypot(
+                (b.left + b.width / 2) - e.clientX,
+                (b.top + b.height / 2) - e.clientY
+            );
+            if (dist < 120) moveNo(e.clientX, e.clientY);
+        });
+
+        noBtn.addEventListener("click", e => e.preventDefault());
+
+        /* YES CLICK */
+        yesBtn.addEventListener("click", () => {
+            zone.classList.add("hidden");
+            hint.classList.add("hidden");
+            result.classList.remove("hidden");
+            startParty();
+        });
+
+        /* RESPONSE SHARE LOGIC */
+        async function shareResponse() {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams();
+
+            // "I said YES! to {PartnerName}"
+            // The person viewing this is the Partner (e.g. Alice).
+            // 'partnerName' param is 'Alice'.
+            // Creator was sender.
+            // We want to link back to the page with ?response=yes&partner=Alice
+
+            params.set('response', 'yes');
+            if (partnerName) params.set('partner', partnerName);
+
+            const responseUrl = `${baseUrl}?${params.toString()}`;
+
+            const shareData = {
+                title: `I SAID YES! 💖`,
+                text: `I accepted the valentine proposal! 💍`,
+                url: responseUrl
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log("Share skipped", err);
+                    // Fallback to clipboard if share cancelled or failed
+                    navigator.clipboard.writeText(responseUrl).then(() => alert("Link copied! Send it to them!"));
+                }
+            } else {
+                navigator.clipboard.writeText(responseUrl).then(() => alert("Link copied to clipboard! Send it to them!"));
+            }
+        }
+    </script>
+</body>
+
+</html>
